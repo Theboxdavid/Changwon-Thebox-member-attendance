@@ -419,7 +419,8 @@ button:disabled,
 .select-box,
 .dialog label,
 .login-panel label,
-.hold-form label {
+.hold-form label,
+.admin-login label {
   display: grid;
   gap: 7px;
   color: var(--muted);
@@ -725,6 +726,17 @@ textarea:focus {
 }
 
 .login-panel .login-head p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.admin-login {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-login p {
   margin: 0;
   color: var(--muted);
   line-height: 1.45;

@@ -18,17 +18,17 @@
         </div>
 
         <nav class="nav-tabs" aria-label="화면 전환">
-          <button class="nav-tab active" data-view="admin" type="button">
+          <button class="nav-tab" data-view="admin" type="button">
             <span aria-hidden="true">▦</span>
             관리자
           </button>
-          <button class="nav-tab" data-view="student" type="button">
+          <button class="nav-tab active" data-view="student" type="button">
             <span aria-hidden="true">◉</span>
             학생 로그인
           </button>
         </nav>
 
-        <div class="summary-panel">
+        <div class="summary-panel admin-only hidden">
           <span class="panel-label">오늘 필요한 알림</span>
           <strong id="sidebarAlertCount">0명</strong>
           <p>출석률과 잔여 횟수를 함께 보며 필요한 안내를 바로 할 수 있어요.</p>
@@ -65,13 +65,14 @@
               <span>전날까지 신청 가능</span>
             </div>
           </div>
-          <div class="topbar-actions">
+          <div class="topbar-actions admin-only hidden">
             <button id="resetDemo" class="ghost-button" type="button">샘플 초기화</button>
+            <button id="adminLockButton" class="ghost-button" type="button">관리자 잠금</button>
             <button id="addStudentButton" class="primary-button" type="button">학생 추가</button>
           </div>
         </section>
 
-        <section id="adminView" class="view active-view" aria-labelledby="admin-title">
+        <section id="adminView" class="view" aria-labelledby="admin-title">
           <div class="section-heading">
             <div>
               <h3 id="admin-title">관리자 대시보드</h3>
@@ -137,7 +138,7 @@
           <div id="studentList" class="student-list" aria-live="polite"></div>
         </section>
 
-        <section id="studentView" class="view" aria-labelledby="student-title">
+        <section id="studentView" class="view active-view" aria-labelledby="student-title">
           <div class="section-heading">
             <div>
               <h3 id="student-title">학생 출석율 확인</h3>
@@ -217,6 +218,27 @@
         <div class="dialog-actions">
           <button class="ghost-button" value="cancel" type="button">취소</button>
           <button class="primary-button" value="default" type="submit">등록</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="adminDialog" class="dialog">
+      <form id="adminForm" method="dialog">
+        <div class="dialog-header">
+          <h3>관리자 로그인</h3>
+          <button class="icon-button" value="cancel" type="button" aria-label="닫기">×</button>
+        </div>
+        <div class="admin-login">
+          <p>학생 명단과 출석 관리는 관리자 PIN 입력 후 확인할 수 있습니다.</p>
+          <label>
+            관리자 PIN
+            <input name="adminPin" type="password" required placeholder="관리자 PIN 입력" />
+          </label>
+          <p id="adminError" class="login-error" role="alert"></p>
+        </div>
+        <div class="dialog-actions">
+          <button class="ghost-button" value="cancel" type="button">취소</button>
+          <button class="primary-button" value="default" type="submit">관리자 열기</button>
         </div>
       </form>
     </dialog>

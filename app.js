@@ -1,5 +1,7 @@
 ﻿const STORAGE_KEY = "thebox-ticket-alert-demo-v3";
 
+const ADMIN_PIN = "thebox2026";
+
 const defaultStudents = [
   {
     id: "s-1",
@@ -85,6 +87,7 @@ const defaultStudents = [
 
 let students = loadStudents();
 let loggedInStudentId = null;
+let adminUnlocked = false;
 
 const alertRules = {
   8: [
@@ -124,16 +127,25 @@ const elements = {
   studentPreview: document.querySelector("#studentPreview"),
   dialog: document.querySelector("#studentDialog"),
   form: document.querySelector("#studentForm"),
+  adminDialog: document.querySelector("#adminDialog"),
+  adminForm: document.querySelector("#adminForm"),
+  adminError: document.querySelector("#adminError"),
+  adminOnly: document.querySelectorAll(".admin-only"),
+  adminLockButton: document.querySelector("#adminLockButton"),
   addStudentButton: document.querySelector("#addStudentButton"),
   resetDemo: document.querySelector("#resetDemo"),
 };
 
 elements.navTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
-    elements.navTabs.forEach((item) => item.classList.remove("active"));
-    elements.views.forEach((view) => view.classList.remove("active-view"));
-    tab.classList.add("active");
-    document.querySelector(`#${tab.dataset.view}View`).classList.add("active-view");
+    if (tab.dataset.view === "admin" && !adminUnlocked) {
+      elements.adminError.textContent = "";
+      elements.adminForm.reset();
+      elements.adminDialog.showModal();
+      return;
+    }
+
+    showView(tab.dataset.view);
   });
 });
 
@@ -144,6 +156,33 @@ elements.attendanceFilter.addEventListener("change", render);
 elements.addStudentButton.addEventListener("click", () => elements.dialog.showModal());
 elements.dialog.querySelectorAll("[value='cancel']").forEach((button) => {
   button.addEventListener("click", () => elements.dialog.close());
+});
+elements.adminDialog.querySelectorAll("[value='cancel']").forEach((button) => {
+  button.addEventListener("click", () => elements.adminDialog.close());
+});
+
+elements.adminForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(elements.adminForm);
+  const pin = String(data.get("adminPin") || "").trim();
+
+  if (pin !== ADMIN_PIN) {
+    elements.adminError.textContent = "관리자 PIN이 맞지 않습니다.";
+    return;
+  }
+
+  adminUnlocked = true;
+  elements.adminError.textContent = "";
+  elements.adminDialog.close();
+  elements.adminForm.reset();
+  syncAdminState();
+  showView("admin");
+});
+
+elements.adminLockButton.addEventListener("click", () => {
+  adminUnlocked = false;
+  syncAdminState();
+  showView("student");
 });
 
 elements.resetDemo.addEventListener("click", () => {
@@ -208,6 +247,21 @@ function loadStudents() {
 
 function saveStudents() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+}
+
+function showView(viewName) {
+  elements.navTabs.forEach((item) => {
+    item.classList.toggle("active", item.dataset.view === viewName);
+  });
+  elements.views.forEach((view) => {
+    view.classList.toggle("active-view", view.id === `${viewName}View`);
+  });
+}
+
+function syncAdminState() {
+  elements.adminOnly.forEach((item) => {
+    item.classList.toggle("hidden", !adminUnlocked);
+  });
 }
 
 function normalizeStudent(student) {
