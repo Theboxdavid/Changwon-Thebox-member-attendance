@@ -8,23 +8,23 @@
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar" aria-label="더박스 관리자 메뉴">
+      <aside class="sidebar" aria-label="더박스 학생 포털 메뉴">
         <div class="brand">
-          <div class="brand-mark">TB</div>
+          <div class="brand-mark" aria-hidden="true">TB</div>
           <div>
             <p class="brand-kicker">THE BOX</p>
-            <h1>출석율 관리</h1>
+            <h1>학생 포털</h1>
           </div>
         </div>
 
         <nav class="nav-tabs" aria-label="화면 전환">
-          <button class="nav-tab" data-view="admin" type="button">
+          <button class="nav-tab active" data-view="dashboard" type="button">
             <span aria-hidden="true">▦</span>
-            관리자
+            대시보드
           </button>
-          <button class="nav-tab active" data-view="student" type="button">
+          <button class="nav-tab" data-view="student" type="button">
             <span aria-hidden="true">◉</span>
-            학생 로그인
+            출석·수강권
           </button>
         </nav>
 
@@ -36,39 +36,177 @@
       </aside>
 
       <main class="workspace">
-        <section class="topbar">
-          <div class="topbar-copy">
-            <p class="eyebrow"><span></span> 창원 성인 영어회화 학원</p>
-            <h2>THE BOX</h2>
-            <p class="korean-title">더 박 스</p>
-            <p>출석률, 수강권, 홀딩을 한 화면에서 확인해 학생들이 더 편하게 더박스를 다닐 수 있게 돕습니다.</p>
-          </div>
-          <div class="feature-grid" aria-label="더박스 서비스 요약">
-            <div class="feature-card blue">
-              <div class="feature-icon">□</div>
-              <strong>더박스 스터디</strong>
-              <span>월 2회 홀딩 가능</span>
+        <section id="dashboardView" class="view active-view dashboard-view" aria-labelledby="dashboard-title">
+          <div class="dashboard-hero">
+            <div>
+              <p class="eyebrow"><span></span> 창원 성인 영어회화 학원</p>
+              <h2 id="dashboard-title">THE BOX</h2>
+              <p class="korean-title">더 박 스</p>
+              <p>오늘 수업 주제와 복습 포인트를 미리 확인하고, 출석과 수강권은 별도 페이지에서 확인하세요.</p>
             </div>
-            <div class="feature-card coral">
-              <div class="feature-icon">↗</div>
-              <strong>더박스 아카데미</strong>
-              <span>월 1회 홀딩 가능</span>
-            </div>
-            <div class="feature-card green">
-              <div class="feature-icon">▣</div>
-              <strong>수강권 관리</strong>
-              <span>출석률 자동 계산</span>
-            </div>
-            <div class="feature-card amber">
-              <div class="feature-icon">◇</div>
-              <strong>홀딩 시스템</strong>
-              <span>전날까지 신청 가능</span>
+            <div class="dashboard-today">
+              <span>이번 주 메인 주제</span>
+              <div class="session-stack">
+                <div>
+                  <b>Session 1</b>
+                  <strong>Coachella 2026 Music Festival Experience</strong>
+                  <p>음악 페스티벌 경험, 공연 문화, 여행 계획을 영어로 이야기합니다.</p>
+                  <a class="pdf-link" href="assets/topics/coachella-2026.pdf" target="_blank" rel="noopener">PDF 보기</a>
+                </div>
+                <div>
+                  <b>Session 2</b>
+                  <strong>Many People Will Be Overweight in 2050</strong>
+                  <p>건강, 생활 습관, 미래 사회 문제에 대해 의견을 말합니다.</p>
+                  <a class="pdf-link" href="assets/topics/overweight-2050.pdf" target="_blank" rel="noopener">PDF 보기</a>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="topbar-actions admin-only hidden">
-            <button id="resetDemo" class="ghost-button" type="button">샘플 초기화</button>
-            <button id="adminLockButton" class="ghost-button" type="button">관리자 잠금</button>
-            <button id="addStudentButton" class="primary-button" type="button">학생 추가</button>
+
+          <div class="dashboard-grid">
+            <article class="dashboard-panel topic-panel">
+              <div class="panel-head">
+                <span>CLASS TOPICS</span>
+                <h3>수업 전 확인</h3>
+              </div>
+              <div class="session-list">
+                <div class="session-card">
+                  <div class="session-head">
+                    <b>Session 1</b>
+                    <strong>Coachella 2026 Music Festival Experience</strong>
+                  </div>
+                  <div class="prep-columns">
+                    <div>
+                      <h4>필요 단어</h4>
+                      <ul class="study-list">
+                        <li><strong>festival</strong><span>축제, 페스티벌</span></li>
+                        <li><strong>lineup</strong><span>공연 출연진</span></li>
+                        <li><strong>venue</strong><span>행사 장소</span></li>
+                        <li><strong>crowd</strong><span>관중, 사람들</span></li>
+                        <li><strong>memorable</strong><span>기억에 남는</span></li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4>필수 문장</h4>
+                      <ul class="study-list phrase-list">
+                        <li><strong>I would love to go to a music festival.</strong><span>음악 페스티벌에 꼭 가보고 싶어요.</span></li>
+                        <li><strong>The lineup looks amazing this year.</strong><span>올해 출연진이 정말 좋아 보여요.</span></li>
+                        <li><strong>It would be a memorable experience.</strong><span>기억에 남는 경험이 될 것 같아요.</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="session-card">
+                  <div class="session-head">
+                    <b>Session 2</b>
+                    <strong>Many People Will Be Overweight in 2050</strong>
+                  </div>
+                  <div class="prep-columns">
+                    <div>
+                      <h4>필요 단어</h4>
+                      <ul class="study-list">
+                        <li><strong>overweight</strong><span>과체중의</span></li>
+                        <li><strong>obesity</strong><span>비만</span></li>
+                        <li><strong>lifestyle</strong><span>생활 방식</span></li>
+                        <li><strong>diet</strong><span>식단</span></li>
+                        <li><strong>prevent</strong><span>예방하다</span></li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4>필수 문장</h4>
+                      <ul class="study-list phrase-list">
+                        <li><strong>Many people may become overweight by 2050.</strong><span>2050년까지 많은 사람이 과체중이 될 수 있어요.</span></li>
+                        <li><strong>Our lifestyle has a big impact on health.</strong><span>생활 방식은 건강에 큰 영향을 줍니다.</span></li>
+                        <li><strong>We should build healthier habits.</strong><span>우리는 더 건강한 습관을 만들어야 해요.</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="dashboard-panel instagram-panel">
+              <div class="panel-head">
+                <span>INSTAGRAM</span>
+                <h3>더박스 소식</h3>
+              </div>
+              <div class="instagram-card">
+                <a class="instagram-profile" href="https://www.instagram.com/thebox_changwon/" target="_blank" rel="noopener" aria-label="더박스 창원 인스타그램 열기">
+                  <div class="instagram-avatar" aria-hidden="true">TB</div>
+                  <div>
+                    <strong>@thebox_changwon</strong>
+                    <span>THE BOX Changwon</span>
+                  </div>
+                </a>
+                <div class="instagram-preview-grid" aria-label="인스타그램 소식 미리보기">
+                  <a href="https://www.instagram.com/thebox_changwon/" target="_blank" rel="noopener">
+                    <span>CLASS</span>
+                    <strong>이번 주 수업 주제</strong>
+                  </a>
+                  <a href="https://www.instagram.com/thebox_changwon/" target="_blank" rel="noopener">
+                    <span>EVENT</span>
+                    <strong>English Party</strong>
+                  </a>
+                  <a href="https://www.instagram.com/thebox_changwon/" target="_blank" rel="noopener">
+                    <span>STORY</span>
+                    <strong>수업 분위기 보기</strong>
+                  </a>
+                </div>
+                <p>최신 사진과 공지는 인스타그램에서 바로 확인하세요.</p>
+                <a class="instagram-button" href="https://www.instagram.com/thebox_changwon/" target="_blank" rel="noopener">인스타그램 바로가기</a>
+              </div>
+            </article>
+
+            <article class="dashboard-panel notice-panel">
+              <div class="panel-head">
+                <span>UPCOMING EVENT</span>
+                <h3>곧 하는 일정</h3>
+              </div>
+              <div class="event-card">
+                <b>더박스 English Party</b>
+                <strong>Coming Soon</strong>
+                <p>이번 주 수업 주제처럼 음악, 여행, 건강 습관을 가볍게 영어로 이야기하는 네트워킹 파티를 준비 중입니다.</p>
+                <span>자세한 날짜와 장소는 학원 공지로 안내됩니다.</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="feature-panel" aria-label="더박스 서비스 요약">
+            <div class="feature-panel-head">
+              <span>THE BOX PASS</span>
+              <strong>수강권 이용 안내</strong>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-item blue">
+                <div class="feature-icon">□</div>
+                <div>
+                  <strong>더박스 스터디</strong>
+                  <span>월 2회 홀딩 가능</span>
+                </div>
+              </div>
+              <div class="feature-item coral">
+                <div class="feature-icon">↗</div>
+                <div>
+                  <strong>더박스 아카데미</strong>
+                  <span>월 1회 홀딩 가능</span>
+                </div>
+              </div>
+              <div class="feature-item green">
+                <div class="feature-icon">▣</div>
+                <div>
+                  <strong>수강권 관리</strong>
+                  <span>출석률 자동 계산</span>
+                </div>
+              </div>
+              <div class="feature-item amber">
+                <div class="feature-icon">◇</div>
+                <div>
+                  <strong>홀딩 시스템</strong>
+                  <span>전날까지 신청 가능</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -96,10 +234,16 @@
                 <strong id="renewalAlerts">0</strong>
               </div>
               <div class="metric">
-                <span>홀딩 신청</span>
+                <span>신청 대기</span>
                 <strong id="pendingHolds">0</strong>
               </div>
             </div>
+          </div>
+
+          <div class="admin-actions admin-only hidden">
+            <button id="resetDemo" class="ghost-button" type="button">샘플 초기화</button>
+            <button id="adminLockButton" class="ghost-button" type="button">관리자 잠금</button>
+            <button id="addStudentButton" class="primary-button" type="button">학생 추가</button>
           </div>
 
           <div class="tools-row">
@@ -138,7 +282,7 @@
           <div id="studentList" class="student-list" aria-live="polite"></div>
         </section>
 
-        <section id="studentView" class="view active-view" aria-labelledby="student-title">
+        <section id="studentView" class="view" aria-labelledby="student-title">
           <div class="section-heading">
             <div>
               <h3 id="student-title">학생 출석율 확인</h3>
@@ -149,7 +293,7 @@
           <div id="studentLogin" class="student-login">
             <form id="loginForm" class="login-panel">
               <div class="login-head">
-                <div class="login-mark">TB</div>
+                <div class="login-mark" aria-hidden="true">TB</div>
                 <p class="eyebrow">THE BOX STUDENT PASS</p>
                 <h3>내 수강권 확인</h3>
                 <p>관리자가 안내한 고유번호와 전화번호 뒤 4자리를 입력해주세요.</p>
@@ -218,27 +362,6 @@
         <div class="dialog-actions">
           <button class="ghost-button" value="cancel" type="button">취소</button>
           <button class="primary-button" value="default" type="submit">등록</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="adminDialog" class="dialog">
-      <form id="adminForm" method="dialog">
-        <div class="dialog-header">
-          <h3>관리자 로그인</h3>
-          <button class="icon-button" value="cancel" type="button" aria-label="닫기">×</button>
-        </div>
-        <div class="admin-login">
-          <p>학생 명단과 출석 관리는 관리자 PIN 입력 후 확인할 수 있습니다.</p>
-          <label>
-            관리자 PIN
-            <input name="adminPin" type="password" required placeholder="관리자 PIN 입력" />
-          </label>
-          <p id="adminError" class="login-error" role="alert"></p>
-        </div>
-        <div class="dialog-actions">
-          <button class="ghost-button" value="cancel" type="button">취소</button>
-          <button class="primary-button" value="default" type="submit">관리자 열기</button>
         </div>
       </form>
     </dialog>

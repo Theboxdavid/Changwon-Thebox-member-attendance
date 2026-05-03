@@ -1,6 +1,9 @@
 ﻿const STORAGE_KEY = "thebox-ticket-alert-demo-v3";
 
-const ADMIN_PIN = "thebox2026";
+const ADMIN_LOGIN = {
+  phoneLast4: "9475",
+  pin: "0000",
+};
 
 const defaultStudents = [
   {
@@ -15,6 +18,7 @@ const defaultStudents = [
     holdsUsed: 0,
     sentAlerts: {},
     holdRequests: [],
+    certificateRequests: [],
     attendanceLog: [
       { id: "a-1-1", date: getPastDate(14), status: "present", note: "출석" },
     ],
@@ -39,6 +43,7 @@ const defaultStudents = [
         requestedAt: new Date().toISOString(),
       },
     ],
+    certificateRequests: [],
     attendanceLog: [
       { id: "a-2-1", date: getPastDate(21), status: "present", note: "출석" },
       { id: "a-2-2", date: getPastDate(14), status: "absent", note: "결석" },
@@ -57,6 +62,7 @@ const defaultStudents = [
     holdsUsed: 1,
     sentAlerts: {},
     holdRequests: [],
+    certificateRequests: [],
     attendanceLog: [
       { id: "a-3-1", date: getPastDate(24), status: "present", note: "출석" },
       { id: "a-3-2", date: getPastDate(17), status: "absent", note: "결석" },
@@ -76,6 +82,7 @@ const defaultStudents = [
     holdsUsed: 2,
     sentAlerts: { half: true },
     holdRequests: [],
+    certificateRequests: [],
     attendanceLog: [
       { id: "a-4-1", date: getPastDate(28), status: "present", note: "출석" },
       { id: "a-4-2", date: getPastDate(21), status: "present", note: "출석" },
@@ -127,9 +134,6 @@ const elements = {
   studentPreview: document.querySelector("#studentPreview"),
   dialog: document.querySelector("#studentDialog"),
   form: document.querySelector("#studentForm"),
-  adminDialog: document.querySelector("#adminDialog"),
-  adminForm: document.querySelector("#adminForm"),
-  adminError: document.querySelector("#adminError"),
   adminOnly: document.querySelectorAll(".admin-only"),
   adminLockButton: document.querySelector("#adminLockButton"),
   addStudentButton: document.querySelector("#addStudentButton"),
@@ -138,13 +142,6 @@ const elements = {
 
 elements.navTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
-    if (tab.dataset.view === "admin" && !adminUnlocked) {
-      elements.adminError.textContent = "";
-      elements.adminForm.reset();
-      elements.adminDialog.showModal();
-      return;
-    }
-
     showView(tab.dataset.view);
   });
 });
@@ -157,32 +154,11 @@ elements.addStudentButton.addEventListener("click", () => elements.dialog.showMo
 elements.dialog.querySelectorAll("[value='cancel']").forEach((button) => {
   button.addEventListener("click", () => elements.dialog.close());
 });
-elements.adminDialog.querySelectorAll("[value='cancel']").forEach((button) => {
-  button.addEventListener("click", () => elements.adminDialog.close());
-});
-
-elements.adminForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = new FormData(elements.adminForm);
-  const pin = String(data.get("adminPin") || "").trim();
-
-  if (pin !== ADMIN_PIN) {
-    elements.adminError.textContent = "관리자 PIN이 맞지 않습니다.";
-    return;
-  }
-
-  adminUnlocked = true;
-  elements.adminError.textContent = "";
-  elements.adminDialog.close();
-  elements.adminForm.reset();
-  syncAdminState();
-  showView("admin");
-});
 
 elements.adminLockButton.addEventListener("click", () => {
   adminUnlocked = false;
   syncAdminState();
-  showView("student");
+  showView("dashboard");
 });
 
 elements.resetDemo.addEventListener("click", () => {
@@ -197,6 +173,18 @@ elements.loginForm.addEventListener("submit", (event) => {
   const data = new FormData(elements.loginForm);
   const phoneLast4 = onlyDigits(data.get("phoneLast4"));
   const pin = onlyDigits(data.get("pin"));
+
+  if (phoneLast4 === ADMIN_LOGIN.phoneLast4 && pin === ADMIN_LOGIN.pin) {
+    adminUnlocked = true;
+    loggedInStudentId = null;
+    elements.loginError.textContent = "";
+    elements.loginForm.reset();
+    syncAdminState();
+    showView("admin");
+    render();
+    return;
+  }
+
   const matchedStudent = students.find((student) => {
     return getPhoneLast4(student.phone) === phoneLast4 && student.pin === pin;
   });
@@ -230,6 +218,7 @@ elements.form.addEventListener("submit", (event) => {
     holdsUsed: 0,
     sentAlerts: {},
     holdRequests: [],
+    certificateRequests: [],
     attendanceLog: createAttendanceFromUsage(plan - remaining),
   });
 
@@ -271,6 +260,7 @@ function normalizeStudent(student) {
     holdsUsed: student.holdsUsed || 0,
     sentAlerts: student.sentAlerts || {},
     holdRequests: student.holdRequests || [],
+    certificateRequests: student.certificateRequests || [],
     attendanceLog: student.attendanceLog || createAttendanceFromUsage((student.plan || 0) - (student.remaining || 0)),
   };
 }
@@ -307,6 +297,14 @@ function formatDate(value) {
 
 function getPendingHolds(student) {
   return student.holdRequests.filter((request) => request.status === "pending");
+}
+
+function getPendingCertificates(student) {
+  return student.certificateRequests.filter((request) => request.status === "pending");
+}
+
+function getLatestCertificate(student) {
+  return student.certificateRequests.slice().reverse()[0] || null;
 }
 
 function getHoldSummary(student) {
@@ -427,6 +425,7 @@ function render() {
   const pending = students.filter(getAlert);
   const renewals = students.filter((student) => getAlert(student)?.key === "renewal");
   const pendingHolds = students.reduce((sum, student) => sum + getPendingHolds(student).length, 0);
+  const pendingCertificates = students.reduce((sum, student) => sum + getPendingCertificates(student).length, 0);
   const averageAttendance = students.length
     ? Math.round(students.reduce((sum, student) => sum + getAttendanceStats(student).rate, 0) / students.length)
     : 0;
@@ -435,7 +434,7 @@ function render() {
   elements.pendingAlerts.textContent = pending.length;
   elements.averageAttendance.textContent = `${averageAttendance}%`;
   elements.renewalAlerts.textContent = renewals.length;
-  elements.pendingHolds.textContent = pendingHolds;
+  elements.pendingHolds.textContent = pendingHolds + pendingCertificates;
   elements.sidebarAlertCount.textContent = `${pending.length}명`;
 
   renderStudentList();
@@ -458,6 +457,7 @@ function renderStudentList() {
       const message = alert ? makeMessage(student, alert) : "";
       const holdSummary = getHoldSummary(student);
       const pendingHoldList = getPendingHolds(student);
+      const pendingCertificateList = getPendingCertificates(student);
       const attendanceStats = getAttendanceStats(student);
       const recentAttendance = (student.attendanceLog || []).slice().reverse().slice(0, 3);
 
@@ -505,6 +505,28 @@ function renderStudentList() {
                             <div class="hold-actions">
                               <button type="button" data-action="approveHold" data-hold-id="${request.id}">승인</button>
                               <button type="button" data-action="rejectHold" data-hold-id="${request.id}">반려</button>
+                            </div>
+                          </div>
+                        `
+                      )
+                      .join("")
+                  : `<p>대기 중인 신청 없음</p>`
+              }
+            </div>
+            <div class="certificate-admin">
+              <strong>수강증 신청</strong>
+              ${
+                pendingCertificateList.length
+                  ? pendingCertificateList
+                      .map(
+                        (request) => `
+                          <div class="certificate-request" data-certificate-id="${request.id}">
+                            <div>
+                              <b>${formatDate(request.requestedAt.slice(0, 10))}</b>
+                              <span>${request.memo || "수강증 출력 요청"}</span>
+                            </div>
+                            <div class="hold-actions">
+                              <button type="button" data-action="completeCertificate" data-certificate-id="${request.id}">출력 완료</button>
                             </div>
                           </div>
                         `
@@ -632,6 +654,14 @@ async function handleStudentCardClick(event) {
     }
   }
 
+  if (action === "completeCertificate") {
+    const request = student.certificateRequests.find((item) => item.id === button.dataset.certificateId);
+    if (request) {
+      request.status = "completed";
+      request.completedAt = new Date().toISOString();
+    }
+  }
+
   if (action === "copy") {
     const textarea = card.querySelector("textarea");
     try {
@@ -670,6 +700,8 @@ function renderStudentPreview() {
   const recentHolds = student.holdRequests.slice().reverse().slice(0, 3);
   const attendanceStats = getAttendanceStats(student);
   const recentAttendance = (student.attendanceLog || []).slice().reverse().slice(0, 5);
+  const latestCertificate = getLatestCertificate(student);
+  const hasPendingCertificate = latestCertificate?.status === "pending";
   const canRequestHold = holdSummary.left > 0;
 
   elements.studentLogin.classList.add("hidden");
@@ -736,6 +768,30 @@ function renderStudentPreview() {
       <p class="form-note">${canRequestHold ? `이번 수강권에서 ${holdSummary.left}회 더 신청할 수 있습니다.` : "사용 가능한 홀딩 횟수를 모두 사용했습니다."}</p>
     </form>
 
+    <form id="certificateForm" class="certificate-form">
+      <div>
+        <h5>수강증 신청</h5>
+        <p>수강증이 필요하면 신청해주세요. 더박스 상담실로 오시면 확인 후 출력해드립니다.</p>
+      </div>
+      <div class="certificate-status ${latestCertificate?.status || "none"}">
+        <span>현재 상태</span>
+        <strong>${getCertificateStatusLabel(latestCertificate?.status)}</strong>
+        <p>${
+          latestCertificate?.status === "completed"
+            ? "수강증 준비가 완료되었습니다. 더박스 상담실로 오시면 출력해드립니다."
+            : latestCertificate?.status === "pending"
+              ? "신청이 접수되었습니다. 상담실에서 확인 후 준비되면 상태가 바뀝니다."
+              : "아직 신청 내역이 없습니다."
+        }</p>
+      </div>
+      <label>
+        요청 메모
+        <input name="memo" placeholder="예: 회사 제출용, 영문 이름 필요 등" ${hasPendingCertificate ? "disabled" : ""} />
+      </label>
+      <button class="primary-button" type="submit" ${hasPendingCertificate ? "disabled" : ""}>수강증 신청하기</button>
+      <p class="form-note">${hasPendingCertificate ? "이미 신청한 수강증이 준비 대기 중입니다." : "신청 후 준비가 완료되면 이 화면에서 바로 확인할 수 있습니다."}</p>
+    </form>
+
     <div class="attendance-history">
       <h5>최근 출결 내역</h5>
       ${
@@ -791,6 +847,19 @@ function renderStudentPreview() {
     saveStudents();
     render();
   });
+
+  elements.studentPreview.querySelector("#certificateForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    student.certificateRequests.push({
+      id: crypto.randomUUID(),
+      memo: String(data.get("memo") || "").trim(),
+      status: "pending",
+      requestedAt: new Date().toISOString(),
+    });
+    saveStudents();
+    render();
+  });
 }
 
 function getHoldStatusLabel(status) {
@@ -800,6 +869,15 @@ function getHoldStatusLabel(status) {
     rejected: "반려",
   };
   return labels[status] || status;
+}
+
+function getCertificateStatusLabel(status) {
+  const labels = {
+    pending: "준비 대기",
+    completed: "준비 완료",
+    none: "신청 전",
+  };
+  return labels[status || "none"] || status;
 }
 
 render();
