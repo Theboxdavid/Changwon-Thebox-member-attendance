@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>더박스 출석율 관리</title>
-    <link rel="stylesheet" href="styles.css?v=20260504-3" />
+    <link rel="stylesheet" href="styles.css?v=20260504-6" />
   </head>
   <body>
     <div class="app-shell">
@@ -343,6 +343,24 @@
             </select>
           </label>
           <label>
+            수업 요일
+            <select name="classPreset">
+              <option value="1,3" selected>월/수</option>
+              <option value="2,4">화/목</option>
+              <option value="6,0">토/일</option>
+              <option value="2,6">화/토</option>
+              <option value="1">월만</option>
+              <option value="2">화만</option>
+              <option value="3">수만</option>
+              <option value="4">목만</option>
+              <option value="6">토만</option>
+              <option value="0">일만</option>
+              <option value="1,6">월/토</option>
+              <option value="3,6">수/토</option>
+              <option value="custom">직접 체크</option>
+            </select>
+          </label>
+          <label>
             수강권
             <select name="plan">
               <option value="8">월 8회</option>
@@ -358,6 +376,32 @@
             결제 개월 수
             <input name="months" type="number" min="1" max="12" value="1" required />
           </label>
+          <fieldset class="weekday-field">
+            <legend>정기 수업 요일</legend>
+            <div class="weekday-presets" aria-label="자주 쓰는 수업 요일 조합">
+              <button type="button" data-days="1,3">월/수</button>
+              <button type="button" data-days="2,4">화/목</button>
+              <button type="button" data-days="6,0">토/일</button>
+              <button type="button" data-days="2,6">화/토</button>
+              <button type="button" data-days="1">월만</button>
+              <button type="button" data-days="2">화만</button>
+              <button type="button" data-days="3">수만</button>
+              <button type="button" data-days="4">목만</button>
+              <button type="button" data-days="6">토만</button>
+              <button type="button" data-days="0">일만</button>
+              <button type="button" data-days="1,6">월/토</button>
+              <button type="button" data-days="3,6">수/토</button>
+            </div>
+            <div class="weekday-grid">
+              <label><input name="classDays" type="checkbox" value="1" checked /> 월</label>
+              <label><input name="classDays" type="checkbox" value="2" /> 화</label>
+              <label><input name="classDays" type="checkbox" value="3" checked /> 수</label>
+              <label><input name="classDays" type="checkbox" value="4" /> 목</label>
+              <label><input name="classDays" type="checkbox" value="6" /> 토</label>
+              <label><input name="classDays" type="checkbox" value="0" /> 일</label>
+            </div>
+            <p>월/수, 화/목, 토/일, 목만, 토만, 목/토처럼 학생별로 체크해주세요.</p>
+          </fieldset>
         </div>
         <div class="dialog-actions">
           <button class="ghost-button" value="cancel" type="button">취소</button>
@@ -366,7 +410,7 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=20260504-3"></script>
+    <script src="app.js?v=20260504-6"></script>
   </body>
 </html>
 

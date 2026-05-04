@@ -5,6 +5,16 @@ const ADMIN_LOGIN = {
   pin: "0000",
 };
 
+const CLASS_DAY_LABELS = {
+  0: "일",
+  1: "월",
+  2: "화",
+  3: "수",
+  4: "목",
+  5: "금",
+  6: "토",
+};
+
 const defaultStudents = [
   {
     id: "s-1",
@@ -15,6 +25,8 @@ const defaultStudents = [
     plan: 16,
     remaining: 15,
     months: 1,
+    classDays: [1, 3],
+    lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 0,
     sentAlerts: {},
     holdRequests: [],
@@ -32,6 +44,8 @@ const defaultStudents = [
     plan: 16,
     remaining: 8,
     months: 1,
+    classDays: [2, 4],
+    lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 1,
     sentAlerts: {},
     holdRequests: [
@@ -59,6 +73,8 @@ const defaultStudents = [
     plan: 16,
     remaining: 3,
     months: 1,
+    classDays: [6],
+    lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 1,
     sentAlerts: {},
     holdRequests: [],
@@ -79,6 +95,8 @@ const defaultStudents = [
     plan: 24,
     remaining: 12,
     months: 2,
+    classDays: [4, 6],
+    lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 2,
     sentAlerts: { half: true },
     holdRequests: [],
@@ -95,6 +113,7 @@ const defaultStudents = [
 let students = loadStudents();
 let loggedInStudentId = null;
 let adminUnlocked = false;
+applyAutoDeductions();
 
 const alertRules = {
   8: [
@@ -155,6 +174,29 @@ elements.dialog.querySelectorAll("[value='cancel']").forEach((button) => {
   button.addEventListener("click", () => elements.dialog.close());
 });
 
+elements.dialog.querySelectorAll("[data-days]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const days = button.dataset.days.split(",");
+    elements.form.elements.classPreset.value = button.dataset.days;
+    elements.form.querySelectorAll("input[name='classDays']").forEach((checkbox) => {
+      checkbox.checked = days.includes(checkbox.value);
+    });
+    elements.dialog.querySelectorAll("[data-days]").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+  });
+});
+
+elements.form.elements.classPreset.addEventListener("change", (event) => {
+  if (event.target.value === "custom") return;
+  const days = event.target.value.split(",");
+  elements.form.querySelectorAll("input[name='classDays']").forEach((checkbox) => {
+    checkbox.checked = days.includes(checkbox.value);
+  });
+  elements.dialog.querySelectorAll("[data-days]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.days === event.target.value);
+  });
+});
+
 elements.adminLockButton.addEventListener("click", () => {
   adminUnlocked = false;
   syncAdminState();
@@ -162,7 +204,7 @@ elements.adminLockButton.addEventListener("click", () => {
 });
 
 elements.resetDemo.addEventListener("click", () => {
-  students = structuredClone(defaultStudents);
+  students = cloneData(defaultStudents);
   loggedInStudentId = null;
   saveStudents();
   render();
@@ -207,7 +249,7 @@ elements.form.addEventListener("submit", (event) => {
   const remaining = Math.min(Number(data.get("remaining")), plan);
 
   students.unshift({
-    id: crypto.randomUUID(),
+    id: createId(),
     name: data.get("name").trim(),
     phone: data.get("phone").trim(),
     pin: onlyDigits(data.get("pin")),
@@ -215,6 +257,8 @@ elements.form.addEventListener("submit", (event) => {
     plan,
     remaining,
     months: Number(data.get("months")),
+    classDays: getSelectedClassDays(data),
+    lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 0,
     sentAlerts: {},
     holdRequests: [],
@@ -230,7 +274,7 @@ elements.form.addEventListener("submit", (event) => {
 
 function loadStudents() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  const loaded = saved ? JSON.parse(saved) : structuredClone(defaultStudents);
+  const loaded = saved ? JSON.parse(saved) : cloneData(defaultStudents);
   return loaded.map(normalizeStudent);
 }
 
@@ -257,6 +301,8 @@ function normalizeStudent(student) {
   return {
     ...student,
     pin: student.pin || "0000",
+    classDays: normalizeClassDays(student.classDays),
+    lastAutoDeductedDate: student.lastAutoDeductedDate || getTodayISO(),
     holdsUsed: student.holdsUsed || 0,
     sentAlerts: student.sentAlerts || {},
     holdRequests: student.holdRequests || [],
@@ -273,16 +319,117 @@ function getPhoneLast4(phone) {
   return onlyDigits(phone).slice(-4);
 }
 
+function getTodayISO() {
+  return toISODate(new Date());
+}
+
+function createId() {
+  if (window.crypto?.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function cloneData(data) {
+  if (window.structuredClone) {
+    return structuredClone(data);
+  }
+  return JSON.parse(JSON.stringify(data));
+}
+
+function getSelectedClassDays(data) {
+  const preset = String(data.get("classPreset") || "");
+  if (preset && preset !== "custom") {
+    return preset.split(",").map(Number).filter((day) => Number.isInteger(day));
+  }
+  const selected = data.getAll("classDays").map(Number).filter((day) => Number.isInteger(day));
+  return selected.length ? selected : [1, 3];
+}
+
+function normalizeClassDays(days) {
+  if (!Array.isArray(days)) return [1, 3];
+  const normalized = [...new Set(days.map(Number))]
+    .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+    .sort((a, b) => a - b);
+  return normalized.length ? normalized : [1, 3];
+}
+
+function formatClassDays(days) {
+  return normalizeClassDays(days).map((day) => CLASS_DAY_LABELS[day]).join(" · ");
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function toISODate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function hasAttendanceOnDate(student, date) {
+  return (student.attendanceLog || []).some((record) => record.date === date);
+}
+
+function applyAutoDeductions() {
+  const today = getTodayISO();
+  let changed = false;
+
+  students.forEach((student) => {
+    const classDays = normalizeClassDays(student.classDays);
+    const lastDate = student.lastAutoDeductedDate || today;
+    let cursor = addDays(`${lastDate}T00:00:00`, 1);
+    const todayDate = new Date(`${today}T00:00:00`);
+    let deducted = 0;
+
+    while (cursor <= todayDate) {
+      const date = toISODate(cursor);
+      const day = cursor.getDay();
+
+      if (classDays.includes(day) && student.remaining > 0 && !hasAttendanceOnDate(student, date)) {
+        student.remaining = Math.max(0, student.remaining - 1);
+        student.attendanceLog.push({
+          id: createId(),
+          date,
+          status: "present",
+          note: "정기 수업 자동 차감",
+          autoDeducted: true,
+        });
+        deducted += 1;
+      }
+
+      cursor = addDays(cursor, 1);
+    }
+
+    if (student.lastAutoDeductedDate !== today) {
+      student.lastAutoDeductedDate = today;
+      changed = true;
+    }
+
+    if (deducted > 0) {
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    saveStudents();
+  }
+}
+
 function getFutureDate(days) {
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toISODate(date);
 }
 
 function getPastDate(days) {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
+  return toISODate(date);
 }
 
 function getTomorrowDate() {
@@ -315,7 +462,7 @@ function getHoldSummary(student) {
 
 function createAttendanceFromUsage(used) {
   return Array.from({ length: Math.max(0, used) }, (_, index) => ({
-    id: `seed-${crypto.randomUUID()}`,
+    id: `seed-${createId()}`,
     date: getPastDate((index + 1) * 3),
     status: "present",
     note: "출석",
@@ -469,6 +616,7 @@ function renderStudentList() {
             <div class="tag-row">
               <span class="tag">${student.course}</span>
               <span class="tag">월 ${student.plan}회</span>
+              <span class="tag">수업 ${formatClassDays(student.classDays)}</span>
               <span class="tag">고유번호 ${student.pin}</span>
               ${getAttendanceBadge(attendanceStats)}
               ${getAlertBadge(student)}
@@ -490,6 +638,7 @@ function renderStudentList() {
                 <button type="button" data-action="increase" title="횟수 복구">+</button>
               </div>
             </div>
+            <p class="auto-deduct-note">정기 수업일 ${formatClassDays(student.classDays)} · 마지막 자동 확인 ${formatDate(student.lastAutoDeductedDate)}</p>
             <div class="hold-admin">
               <strong>홀딩 신청</strong>
               ${
@@ -602,23 +751,39 @@ async function handleStudentCardClick(event) {
   }
 
   if (action === "present") {
-    student.remaining = Math.max(0, student.remaining - 1);
-    student.attendanceLog.push({
-      id: crypto.randomUUID(),
-      date: new Date().toISOString().slice(0, 10),
-      status: "present",
-      note: "관리자 출석 처리",
-    });
+    const today = getTodayISO();
+    const existing = student.attendanceLog.find((record) => record.date === today);
+    if (existing) {
+      existing.status = "present";
+      existing.note = "관리자 출석 처리";
+      existing.autoDeducted = false;
+    } else {
+      student.remaining = Math.max(0, student.remaining - 1);
+      student.attendanceLog.push({
+        id: createId(),
+        date: today,
+        status: "present",
+        note: "관리자 출석 처리",
+      });
+    }
   }
 
   if (action === "absent") {
-    student.remaining = Math.max(0, student.remaining - 1);
-    student.attendanceLog.push({
-      id: crypto.randomUUID(),
-      date: new Date().toISOString().slice(0, 10),
-      status: "absent",
-      note: "관리자 결석 처리",
-    });
+    const today = getTodayISO();
+    const existing = student.attendanceLog.find((record) => record.date === today);
+    if (existing) {
+      existing.status = "absent";
+      existing.note = "관리자 결석 처리";
+      existing.autoDeducted = false;
+    } else {
+      student.remaining = Math.max(0, student.remaining - 1);
+      student.attendanceLog.push({
+        id: createId(),
+        date: today,
+        status: "absent",
+        note: "관리자 결석 처리",
+      });
+    }
   }
 
   if (action === "undoAttendance") {
@@ -639,7 +804,7 @@ async function handleStudentCardClick(event) {
       request.deducted = false;
       student.holdsUsed = Math.min(student.months * 2, student.holdsUsed + 1);
       student.attendanceLog.push({
-        id: crypto.randomUUID(),
+        id: createId(),
         date: request.classDate,
         status: "hold",
         note: request.reason || "홀딩 승인",
@@ -711,7 +876,7 @@ function renderStudentPreview() {
       <div>
         <p class="eyebrow">THE BOX STUDENT PASS</p>
         <h4>${student.name}님</h4>
-        <p>${student.course} · 월 ${student.plan}회 수강권</p>
+        <p>${student.course} · 월 ${student.plan}회 수강권 · 정기 수업 ${formatClassDays(student.classDays)}</p>
       </div>
       <div class="preview-actions">
         <span class="tag ${alert?.key === "renewal" ? "danger" : alert ? "warning" : ""}">
@@ -742,6 +907,7 @@ function renderStudentPreview() {
 
     <div class="notice-band">
       현재 출석 ${attendanceStats.present}회, 결석 ${attendanceStats.absent}회, 홀딩 ${attendanceStats.hold}회입니다.
+      정기 수업일이 지나면 앱 확인 시 남은 횟수가 자동 차감됩니다.
       홀딩은 수업 전날까지 신청하면 횟수가 차감되지 않습니다.
       당일 취소 또는 노쇼는 수강권에서 1회 차감될 수 있습니다.
     </div>
@@ -838,7 +1004,7 @@ function renderStudentPreview() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     student.holdRequests.push({
-      id: crypto.randomUUID(),
+      id: createId(),
       classDate: data.get("classDate"),
       reason: data.get("reason"),
       status: "pending",
@@ -852,7 +1018,7 @@ function renderStudentPreview() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     student.certificateRequests.push({
-      id: crypto.randomUUID(),
+      id: createId(),
       memo: String(data.get("memo") || "").trim(),
       status: "pending",
       requestedAt: new Date().toISOString(),

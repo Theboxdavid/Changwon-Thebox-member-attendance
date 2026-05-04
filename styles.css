@@ -1334,10 +1334,12 @@ textarea:focus {
 
 .dialog {
   width: min(720px, calc(100% - 28px));
+  max-height: calc(100vh - 32px);
   border: 0;
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding: 0;
+  overflow: auto;
 }
 
 .dialog::backdrop {
@@ -1360,6 +1362,78 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.weekday-field {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fbfd;
+}
+
+.weekday-field legend {
+  padding: 0 6px;
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.weekday-field p,
+.auto-deduct-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.weekday-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.weekday-presets button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.weekday-presets button.active,
+.weekday-presets button:hover {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weekday-grid label {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.weekday-grid input {
+  accent-color: var(--navy);
 }
 
 .dialog-actions {
@@ -1609,6 +1683,7 @@ textarea:focus {
   .feature-grid,
   .metric-grid,
   .form-grid,
+  .weekday-grid,
   .admin-actions {
     grid-template-columns: 1fr;
   }
