@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>더박스 출석율 관리</title>
-    <link rel="stylesheet" href="styles.css?v=20260504-6" />
+    <link rel="stylesheet" href="styles.css?v=20260505-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -25,6 +25,14 @@
           <button class="nav-tab" data-view="student" type="button">
             <span aria-hidden="true">◉</span>
             출석·수강권
+          </button>
+          <button class="nav-tab admin-only hidden" data-view="todayAttendance" type="button">
+            <span aria-hidden="true">✓</span>
+            오늘 출석부
+          </button>
+          <button class="nav-tab admin-only hidden" data-view="topicAdmin" type="button">
+            <span aria-hidden="true">✎</span>
+            주제 관리
           </button>
         </nav>
 
@@ -210,6 +218,25 @@
           </div>
         </section>
 
+        <section id="todayAttendanceView" class="view admin-only hidden" aria-labelledby="today-attendance-title">
+          <div class="section-heading">
+            <div>
+              <h3 id="today-attendance-title">오늘 출석부</h3>
+              <p>오늘 수업 요일에 해당하는 학생만 모아서 빠르게 출석, 결석, 메모를 처리합니다.</p>
+            </div>
+            <div class="day-filter" aria-label="요일별 출석부 보기">
+              <button type="button" data-day="today" class="active">오늘</button>
+              <button type="button" data-day="1">월</button>
+              <button type="button" data-day="2">화</button>
+              <button type="button" data-day="3">수</button>
+              <button type="button" data-day="4">목</button>
+              <button type="button" data-day="6">토</button>
+              <button type="button" data-day="0">일</button>
+            </div>
+          </div>
+          <div id="todayAttendanceList" class="today-list" aria-live="polite"></div>
+        </section>
+
         <section id="adminView" class="view" aria-labelledby="admin-title">
           <div class="section-heading">
             <div>
@@ -241,9 +268,12 @@
           </div>
 
           <div class="admin-actions admin-only hidden">
+            <button id="exportDataButton" class="ghost-button" type="button">백업 저장</button>
+            <button id="importDataButton" class="ghost-button" type="button">백업 불러오기</button>
             <button id="resetDemo" class="ghost-button" type="button">샘플 초기화</button>
             <button id="adminLockButton" class="ghost-button" type="button">관리자 잠금</button>
             <button id="addStudentButton" class="primary-button" type="button">학생 추가</button>
+            <input id="importDataInput" class="hidden" type="file" accept="application/json" />
           </div>
 
           <div class="tools-row">
@@ -282,6 +312,87 @@
           <div id="studentList" class="student-list" aria-live="polite"></div>
         </section>
 
+        <section id="topicAdminView" class="view admin-only hidden" aria-labelledby="topic-admin-title">
+          <div class="section-heading">
+            <div>
+              <h3 id="topic-admin-title">주제 관리</h3>
+              <p>이번 주 수업 주제, 필수 단어, 필수 문장, 이벤트 문구를 직접 수정합니다.</p>
+            </div>
+            <button id="resetTopicsButton" class="ghost-button" type="button">주제 초기화</button>
+          </div>
+
+          <form id="topicForm" class="topic-admin-form">
+            <div class="topic-admin-grid">
+              <label>
+                Session 1 제목
+                <input name="session1Title" />
+              </label>
+              <label>
+                Session 1 PDF 링크
+                <input name="session1Pdf" placeholder="assets/topics/file.pdf 또는 https://..." />
+              </label>
+              <label>
+                Session 1 설명
+                <textarea name="session1Desc"></textarea>
+              </label>
+              <label>
+                Session 1 단어
+                <textarea name="session1Words" placeholder="festival=축제"></textarea>
+              </label>
+              <label>
+                Session 1 문장
+                <textarea name="session1Phrases" placeholder="I would love to go.=가보고 싶어요."></textarea>
+              </label>
+            </div>
+
+            <div class="topic-admin-grid">
+              <label>
+                Session 2 제목
+                <input name="session2Title" />
+              </label>
+              <label>
+                Session 2 PDF 링크
+                <input name="session2Pdf" placeholder="assets/topics/file.pdf 또는 https://..." />
+              </label>
+              <label>
+                Session 2 설명
+                <textarea name="session2Desc"></textarea>
+              </label>
+              <label>
+                Session 2 단어
+                <textarea name="session2Words" placeholder="overweight=과체중의"></textarea>
+              </label>
+              <label>
+                Session 2 문장
+                <textarea name="session2Phrases" placeholder="We should build habits.=습관을 만들어야 해요."></textarea>
+              </label>
+            </div>
+
+            <div class="topic-admin-grid">
+              <label>
+                Upcoming Event 제목
+                <input name="eventTitle" />
+              </label>
+              <label>
+                Upcoming Event 상태
+                <input name="eventStatus" />
+              </label>
+              <label>
+                Upcoming Event 설명
+                <textarea name="eventDesc"></textarea>
+              </label>
+              <label>
+                Upcoming Event 안내
+                <textarea name="eventNote"></textarea>
+              </label>
+            </div>
+
+            <div class="dialog-actions">
+              <button class="primary-button" type="submit">주제 저장</button>
+            </div>
+          </form>
+        </section>
+
         <section id="studentView" class="view" aria-labelledby="student-title">
           <div class="section-heading">
             <div>
@@ -318,6 +429,7 @@
 
     <dialog id="studentDialog" class="dialog">
       <form id="studentForm" method="dialog">
+        <input name="studentId" type="hidden" />
         <div class="dialog-header">
           <h3>학생 추가</h3>
           <button class="icon-button" value="cancel" type="button" aria-label="닫기">×</button>
@@ -376,6 +488,18 @@
             결제 개월 수
             <input name="months" type="number" min="1" max="12" value="1" required />
           </label>
+          <label>
+            결제일
+            <input name="startDate" type="date" />
+          </label>
+          <label>
+            만료일
+            <input name="expiryDate" type="date" />
+          </label>
+          <label class="full-field">
+            내부 메모
+            <textarea name="memo" placeholder="예: 목요일만 가능, 상담 필요, 레벨 B1"></textarea>
+          </label>
           <fieldset class="weekday-field">
             <legend>정기 수업 요일</legend>
             <div class="weekday-presets" aria-label="자주 쓰는 수업 요일 조합">
@@ -410,7 +534,7 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=20260504-6"></script>
+    <script src="app.js?v=20260505-1"></script>
   </body>
 </html>
 

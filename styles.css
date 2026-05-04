@@ -720,7 +720,7 @@ button:disabled,
 }
 
 .admin-actions {
-  grid-template-columns: repeat(3, max-content);
+  grid-template-columns: repeat(6, max-content);
   justify-content: end;
   margin: 14px 0;
 }
@@ -878,6 +878,7 @@ textarea:focus {
 }
 
 .student-main p,
+.student-meta,
 .state-row,
 .message-box p,
 .hold-admin p,
@@ -899,6 +900,20 @@ textarea:focus {
   margin-top: 12px;
 }
 
+.student-meta {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.slim-button {
+  min-height: 34px;
+  margin-top: 12px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .tag {
   border-radius: 999px;
   background: #eef4f8;
@@ -916,6 +931,21 @@ textarea:focus {
 .tag.danger {
   background: var(--red-soft);
   color: var(--red);
+}
+
+.tag.present {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.tag.absent {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.tag.hold {
+  background: var(--amber-soft);
+  color: var(--amber);
 }
 
 .progress-wrap,
@@ -1128,6 +1158,124 @@ textarea:focus {
   border-radius: 14px;
   text-align: center;
   color: var(--muted);
+}
+
+.day-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.day-filter button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.day-filter button.active,
+.day-filter button:hover {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.today-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.today-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(260px, auto);
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.today-card h4 {
+  margin: 0 0 6px;
+  color: var(--navy);
+  font-size: 20px;
+}
+
+.today-card p,
+.today-status span:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.today-status {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.today-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.today-actions button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.today-actions button[data-action="absent"] {
+  color: var(--red);
+}
+
+.topic-admin-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.topic-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.topic-admin-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.topic-admin-grid textarea,
+.full-field textarea {
+  min-height: 92px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.topic-admin-grid label:nth-child(n + 3),
+.full-field {
+  grid-column: 1 / -1;
 }
 
 .student-login {
@@ -1558,8 +1706,18 @@ textarea:focus {
   .tools-row,
   .preview-grid,
   .hold-form,
-  .certificate-form {
+  .certificate-form,
+  .today-card,
+  .topic-admin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .today-status {
+    justify-items: start;
+  }
+
+  .today-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

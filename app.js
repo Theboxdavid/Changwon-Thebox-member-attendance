@@ -1,5 +1,7 @@
 ﻿const STORAGE_KEY = "thebox-ticket-alert-demo-v3";
 
+const TOPIC_STORAGE_KEY = "thebox-weekly-topic-v1";
+
 const ADMIN_LOGIN = {
   phoneLast4: "9475",
   pin: "0000",
@@ -15,6 +17,51 @@ const CLASS_DAY_LABELS = {
   6: "토",
 };
 
+const defaultWeeklyTopic = {
+  sessions: [
+    {
+      title: "Coachella 2026 Music Festival Experience",
+      desc: "음악 페스티벌 경험, 공연 문화, 여행 계획을 영어로 이야기합니다.",
+      pdf: "assets/topics/coachella-2026.pdf",
+      words: [
+        ["festival", "축제, 페스티벌"],
+        ["lineup", "공연 출연진"],
+        ["venue", "행사 장소"],
+        ["crowd", "관중, 사람들"],
+        ["memorable", "기억에 남는"],
+      ],
+      phrases: [
+        ["I would love to go to a music festival.", "음악 페스티벌에 꼭 가보고 싶어요."],
+        ["The lineup looks amazing this year.", "올해 출연진이 정말 좋아 보여요."],
+        ["It would be a memorable experience.", "기억에 남는 경험이 될 것 같아요."],
+      ],
+    },
+    {
+      title: "Many People Will Be Overweight in 2050",
+      desc: "건강, 생활 습관, 미래 사회 문제에 대해 의견을 말합니다.",
+      pdf: "assets/topics/overweight-2050.pdf",
+      words: [
+        ["overweight", "과체중의"],
+        ["obesity", "비만"],
+        ["lifestyle", "생활 방식"],
+        ["diet", "식단"],
+        ["prevent", "예방하다"],
+      ],
+      phrases: [
+        ["Many people may become overweight by 2050.", "2050년까지 많은 사람이 과체중이 될 수 있어요."],
+        ["Our lifestyle has a big impact on health.", "생활 방식은 건강에 큰 영향을 줍니다."],
+        ["We should build healthier habits.", "우리는 더 건강한 습관을 만들어야 해요."],
+      ],
+    },
+  ],
+  event: {
+    title: "더박스 English Party",
+    status: "Coming Soon",
+    desc: "이번 주 수업 주제처럼 음악, 여행, 건강 습관을 가볍게 영어로 이야기하는 네트워킹 파티를 준비 중입니다.",
+    note: "자세한 날짜와 장소는 학원 공지로 안내됩니다.",
+  },
+};
+
 const defaultStudents = [
   {
     id: "s-1",
@@ -25,6 +72,9 @@ const defaultStudents = [
     plan: 16,
     remaining: 15,
     months: 1,
+    startDate: getPastDate(20),
+    expiryDate: getFutureDate(40),
+    memo: "월/수 기본반",
     classDays: [1, 3],
     lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 0,
@@ -44,6 +94,9 @@ const defaultStudents = [
     plan: 16,
     remaining: 8,
     months: 1,
+    startDate: getPastDate(18),
+    expiryDate: getFutureDate(42),
+    memo: "화/목반, 재등록 상담 예정",
     classDays: [2, 4],
     lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 1,
@@ -73,6 +126,9 @@ const defaultStudents = [
     plan: 16,
     remaining: 3,
     months: 1,
+    startDate: getPastDate(26),
+    expiryDate: getFutureDate(34),
+    memo: "토요일만 수강",
     classDays: [6],
     lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 1,
@@ -95,6 +151,9 @@ const defaultStudents = [
     plan: 24,
     remaining: 12,
     months: 2,
+    startDate: getPastDate(30),
+    expiryDate: getFutureDate(50),
+    memo: "목/토 가능",
     classDays: [4, 6],
     lastAutoDeductedDate: getTodayISO(),
     holdsUsed: 2,
@@ -111,8 +170,10 @@ const defaultStudents = [
 ];
 
 let students = loadStudents();
+let weeklyTopic = loadWeeklyTopic();
 let loggedInStudentId = null;
 let adminUnlocked = false;
+let activeAttendanceDay = "today";
 applyAutoDeductions();
 
 const alertRules = {
@@ -137,6 +198,10 @@ const elements = {
   navTabs: document.querySelectorAll(".nav-tab"),
   views: document.querySelectorAll(".view"),
   studentList: document.querySelector("#studentList"),
+  todayAttendanceList: document.querySelector("#todayAttendanceList"),
+  dayFilters: document.querySelectorAll(".day-filter button"),
+  topicForm: document.querySelector("#topicForm"),
+  resetTopicsButton: document.querySelector("#resetTopicsButton"),
   totalStudents: document.querySelector("#totalStudents"),
   pendingAlerts: document.querySelector("#pendingAlerts"),
   averageAttendance: document.querySelector("#averageAttendance"),
@@ -156,6 +221,9 @@ const elements = {
   adminOnly: document.querySelectorAll(".admin-only"),
   adminLockButton: document.querySelector("#adminLockButton"),
   addStudentButton: document.querySelector("#addStudentButton"),
+  exportDataButton: document.querySelector("#exportDataButton"),
+  importDataButton: document.querySelector("#importDataButton"),
+  importDataInput: document.querySelector("#importDataInput"),
   resetDemo: document.querySelector("#resetDemo"),
 };
 
@@ -169,9 +237,28 @@ elements.search.addEventListener("input", render);
 elements.courseFilter.addEventListener("change", render);
 elements.alertFilter.addEventListener("change", render);
 elements.attendanceFilter.addEventListener("change", render);
-elements.addStudentButton.addEventListener("click", () => elements.dialog.showModal());
+elements.addStudentButton.addEventListener("click", () => openStudentDialog());
 elements.dialog.querySelectorAll("[value='cancel']").forEach((button) => {
   button.addEventListener("click", () => elements.dialog.close());
+});
+
+elements.dayFilters.forEach((button) => {
+  button.addEventListener("click", () => {
+    activeAttendanceDay = button.dataset.day;
+    elements.dayFilters.forEach((item) => item.classList.toggle("active", item === button));
+    renderTodayAttendance();
+  });
+});
+
+elements.exportDataButton.addEventListener("click", exportBackup);
+elements.importDataButton.addEventListener("click", () => elements.importDataInput.click());
+elements.importDataInput.addEventListener("change", importBackup);
+elements.topicForm.addEventListener("submit", handleTopicSubmit);
+elements.resetTopicsButton.addEventListener("click", () => {
+  weeklyTopic = cloneData(defaultWeeklyTopic);
+  saveWeeklyTopic();
+  fillTopicForm();
+  renderTopicContent();
 });
 
 elements.dialog.querySelectorAll("[data-days]").forEach((button) => {
@@ -245,11 +332,10 @@ elements.loginForm.addEventListener("submit", (event) => {
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(elements.form);
+  const studentId = data.get("studentId");
   const plan = Number(data.get("plan"));
   const remaining = Math.min(Number(data.get("remaining")), plan);
-
-  students.unshift({
-    id: createId(),
+  const studentData = {
     name: data.get("name").trim(),
     phone: data.get("phone").trim(),
     pin: onlyDigits(data.get("pin")),
@@ -258,13 +344,29 @@ elements.form.addEventListener("submit", (event) => {
     remaining,
     months: Number(data.get("months")),
     classDays: getSelectedClassDays(data),
-    lastAutoDeductedDate: getTodayISO(),
-    holdsUsed: 0,
-    sentAlerts: {},
-    holdRequests: [],
-    certificateRequests: [],
-    attendanceLog: createAttendanceFromUsage(plan - remaining),
-  });
+    startDate: data.get("startDate") || getTodayISO(),
+    expiryDate: data.get("expiryDate") || "",
+    memo: String(data.get("memo") || "").trim(),
+  };
+
+  if (studentId) {
+    const student = students.find((item) => item.id === studentId);
+    if (student) {
+      Object.assign(student, studentData);
+      student.lastAutoDeductedDate = getTodayISO();
+    }
+  } else {
+    students.unshift({
+      id: createId(),
+      ...studentData,
+      lastAutoDeductedDate: getTodayISO(),
+      holdsUsed: 0,
+      sentAlerts: {},
+      holdRequests: [],
+      certificateRequests: [],
+      attendanceLog: createAttendanceFromUsage(plan - remaining),
+    });
+  }
 
   elements.form.reset();
   elements.dialog.close();
@@ -278,8 +380,22 @@ function loadStudents() {
   return loaded.map(normalizeStudent);
 }
 
+function loadWeeklyTopic() {
+  const saved = localStorage.getItem(TOPIC_STORAGE_KEY);
+  if (!saved) return cloneData(defaultWeeklyTopic);
+  try {
+    return normalizeWeeklyTopic(JSON.parse(saved));
+  } catch {
+    return cloneData(defaultWeeklyTopic);
+  }
+}
+
 function saveStudents() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+}
+
+function saveWeeklyTopic() {
+  localStorage.setItem(TOPIC_STORAGE_KEY, JSON.stringify(weeklyTopic));
 }
 
 function showView(viewName) {
@@ -303,12 +419,39 @@ function normalizeStudent(student) {
     pin: student.pin || "0000",
     classDays: normalizeClassDays(student.classDays),
     lastAutoDeductedDate: student.lastAutoDeductedDate || getTodayISO(),
+    startDate: student.startDate || "",
+    expiryDate: student.expiryDate || "",
+    memo: student.memo || "",
     holdsUsed: student.holdsUsed || 0,
     sentAlerts: student.sentAlerts || {},
     holdRequests: student.holdRequests || [],
     certificateRequests: student.certificateRequests || [],
     attendanceLog: student.attendanceLog || createAttendanceFromUsage((student.plan || 0) - (student.remaining || 0)),
   };
+}
+
+function normalizeWeeklyTopic(topic) {
+  const base = cloneData(defaultWeeklyTopic);
+  return {
+    sessions: [0, 1].map((index) => ({
+      ...base.sessions[index],
+      ...(topic.sessions?.[index] || {}),
+      words: normalizePairs(topic.sessions?.[index]?.words, base.sessions[index].words),
+      phrases: normalizePairs(topic.sessions?.[index]?.phrases, base.sessions[index].phrases),
+    })),
+    event: {
+      ...base.event,
+      ...(topic.event || {}),
+    },
+  };
+}
+
+function normalizePairs(value, fallback) {
+  if (!Array.isArray(value)) return fallback;
+  const pairs = value
+    .map((item) => Array.isArray(item) ? [String(item[0] || ""), String(item[1] || "")] : null)
+    .filter((item) => item && item[0]);
+  return pairs.length ? pairs : fallback;
 }
 
 function onlyDigits(value) {
@@ -348,14 +491,87 @@ function getSelectedClassDays(data) {
 
 function normalizeClassDays(days) {
   if (!Array.isArray(days)) return [1, 3];
+  const order = [1, 2, 3, 4, 5, 6, 0];
   const normalized = [...new Set(days.map(Number))]
     .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
-    .sort((a, b) => a - b);
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b));
   return normalized.length ? normalized : [1, 3];
 }
 
 function formatClassDays(days) {
   return normalizeClassDays(days).map((day) => CLASS_DAY_LABELS[day]).join(" · ");
+}
+
+function getClassPreset(days) {
+  const normalized = normalizeClassDays(days).join(",");
+  const match = elements.form.querySelector(`option[value="${normalized}"]`);
+  return match ? normalized : "custom";
+}
+
+function setClassDayInputs(days) {
+  const normalized = normalizeClassDays(days).map(String);
+  elements.form.elements.classPreset.value = getClassPreset(days);
+  elements.form.querySelectorAll("input[name='classDays']").forEach((checkbox) => {
+    checkbox.checked = normalized.includes(checkbox.value);
+  });
+  elements.dialog.querySelectorAll("[data-days]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.days === normalized.join(","));
+  });
+}
+
+function openStudentDialog(student = null) {
+  elements.form.reset();
+  elements.form.elements.studentId.value = student?.id || "";
+  elements.dialog.querySelector(".dialog-header h3").textContent = student ? "학생 수정" : "학생 추가";
+
+  if (student) {
+    elements.form.elements.name.value = student.name;
+    elements.form.elements.phone.value = student.phone;
+    elements.form.elements.pin.value = student.pin;
+    elements.form.elements.course.value = student.course;
+    elements.form.elements.plan.value = String(student.plan);
+    elements.form.elements.remaining.value = String(student.remaining);
+    elements.form.elements.months.value = String(student.months);
+    elements.form.elements.startDate.value = student.startDate || "";
+    elements.form.elements.expiryDate.value = student.expiryDate || "";
+    elements.form.elements.memo.value = student.memo || "";
+    setClassDayInputs(student.classDays);
+  } else {
+    elements.form.elements.startDate.value = getTodayISO();
+    setClassDayInputs([1, 3]);
+  }
+
+  elements.dialog.showModal();
+}
+
+function getDayNumberForAttendance() {
+  if (activeAttendanceDay === "today") return new Date().getDay();
+  return Number(activeAttendanceDay);
+}
+
+function getStudentsForDay(day) {
+  return students.filter((student) => normalizeClassDays(student.classDays).includes(day));
+}
+
+function getRecordForDate(student, date) {
+  return (student.attendanceLog || []).find((record) => record.date === date);
+}
+
+function makeRenewalMessage(student) {
+  return `${student.name}님, 안녕하세요. 더박스 어학원입니다 :)
+
+현재 ${student.course} 수강권이 ${student.remaining}회 남아있습니다.
+수업 흐름이 끊기지 않도록 재등록 상담을 미리 도와드릴게요.
+편한 시간에 말씀주시면 안내드리겠습니다.`;
+}
+
+function makeAttendanceRiskMessage(student) {
+  const stats = getAttendanceStats(student);
+  return `${student.name}님, 안녕하세요. 더박스 어학원입니다 :)
+
+최근 출석률이 ${stats.rate}%로 확인되어 안내드립니다.
+수업 루틴이 끊기지 않도록 이번 주 가능한 수업 일정을 함께 조정해보면 좋겠습니다.
+홀딩이 필요하시면 수업 전날까지 신청해주세요.`;
 }
 
 function addDays(date, days) {
@@ -511,6 +727,16 @@ function getAlertBadge(student) {
   return `<span class="tag ${className}">${alert.label} 필요</span>`;
 }
 
+function getExpiryBadge(student) {
+  if (!student.expiryDate) return "";
+  const today = new Date(`${getTodayISO()}T00:00:00`);
+  const expiry = new Date(`${student.expiryDate}T00:00:00`);
+  const daysLeft = Math.ceil((expiry - today) / 86400000);
+  if (daysLeft < 0) return `<span class="tag danger">만료 ${Math.abs(daysLeft)}일 지남</span>`;
+  if (daysLeft <= 7) return `<span class="tag warning">만료 ${daysLeft}일 전</span>`;
+  return `<span class="tag">만료 ${formatDate(student.expiryDate)}</span>`;
+}
+
 function makeMessage(student, alert) {
   const nameLine = `${student.name}님, 안녕하세요. 더박스 어학원입니다 :)`;
 
@@ -568,6 +794,169 @@ function getFilteredStudents() {
   });
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function pairsToText(pairs) {
+  return pairs.map(([english, korean]) => `${english}=${korean}`).join("\n");
+}
+
+function textToPairs(text) {
+  return String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [english, ...rest] = line.split("=");
+      return [english.trim(), rest.join("=").trim()];
+    })
+    .filter(([english]) => english);
+}
+
+function renderTopicContent() {
+  const todayStack = document.querySelector(".dashboard-today .session-stack");
+  const sessionList = document.querySelector(".session-list");
+  const eventCard = document.querySelector(".event-card");
+
+  todayStack.innerHTML = weeklyTopic.sessions
+    .map((session, index) => `
+      <div>
+        <b>Session ${index + 1}</b>
+        <strong>${escapeHtml(session.title)}</strong>
+        <p>${escapeHtml(session.desc)}</p>
+        ${session.pdf ? `<a class="pdf-link" href="${escapeHtml(session.pdf)}" target="_blank" rel="noopener">PDF 보기</a>` : ""}
+      </div>
+    `)
+    .join("");
+
+  sessionList.innerHTML = weeklyTopic.sessions
+    .map((session, index) => `
+      <div class="session-card">
+        <div class="session-head">
+          <b>Session ${index + 1}</b>
+          <strong>${escapeHtml(session.title)}</strong>
+        </div>
+        <div class="prep-columns">
+          <div>
+            <h4>필요 단어</h4>
+            <ul class="study-list">
+              ${session.words.map(([english, korean]) => `<li><strong>${escapeHtml(english)}</strong><span>${escapeHtml(korean)}</span></li>`).join("")}
+            </ul>
+          </div>
+          <div>
+            <h4>필수 문장</h4>
+            <ul class="study-list phrase-list">
+              ${session.phrases.map(([english, korean]) => `<li><strong>${escapeHtml(english)}</strong><span>${escapeHtml(korean)}</span></li>`).join("")}
+            </ul>
+          </div>
+        </div>
+      </div>
+    `)
+    .join("");
+
+  eventCard.innerHTML = `
+    <b>${escapeHtml(weeklyTopic.event.title)}</b>
+    <strong>${escapeHtml(weeklyTopic.event.status)}</strong>
+    <p>${escapeHtml(weeklyTopic.event.desc)}</p>
+    <span>${escapeHtml(weeklyTopic.event.note)}</span>
+  `;
+}
+
+function fillTopicForm() {
+  const [session1, session2] = weeklyTopic.sessions;
+  elements.topicForm.elements.session1Title.value = session1.title;
+  elements.topicForm.elements.session1Pdf.value = session1.pdf;
+  elements.topicForm.elements.session1Desc.value = session1.desc;
+  elements.topicForm.elements.session1Words.value = pairsToText(session1.words);
+  elements.topicForm.elements.session1Phrases.value = pairsToText(session1.phrases);
+  elements.topicForm.elements.session2Title.value = session2.title;
+  elements.topicForm.elements.session2Pdf.value = session2.pdf;
+  elements.topicForm.elements.session2Desc.value = session2.desc;
+  elements.topicForm.elements.session2Words.value = pairsToText(session2.words);
+  elements.topicForm.elements.session2Phrases.value = pairsToText(session2.phrases);
+  elements.topicForm.elements.eventTitle.value = weeklyTopic.event.title;
+  elements.topicForm.elements.eventStatus.value = weeklyTopic.event.status;
+  elements.topicForm.elements.eventDesc.value = weeklyTopic.event.desc;
+  elements.topicForm.elements.eventNote.value = weeklyTopic.event.note;
+}
+
+function handleTopicSubmit(event) {
+  event.preventDefault();
+  const data = new FormData(elements.topicForm);
+  weeklyTopic = normalizeWeeklyTopic({
+    sessions: [
+      {
+        title: data.get("session1Title"),
+        pdf: data.get("session1Pdf"),
+        desc: data.get("session1Desc"),
+        words: textToPairs(data.get("session1Words")),
+        phrases: textToPairs(data.get("session1Phrases")),
+      },
+      {
+        title: data.get("session2Title"),
+        pdf: data.get("session2Pdf"),
+        desc: data.get("session2Desc"),
+        words: textToPairs(data.get("session2Words")),
+        phrases: textToPairs(data.get("session2Phrases")),
+      },
+    ],
+    event: {
+      title: data.get("eventTitle"),
+      status: data.get("eventStatus"),
+      desc: data.get("eventDesc"),
+      note: data.get("eventNote"),
+    },
+  });
+  saveWeeklyTopic();
+  renderTopicContent();
+}
+
+function exportBackup() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    students,
+    weeklyTopic,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `thebox-backup-${getTodayISO()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    try {
+      const data = JSON.parse(String(reader.result || "{}"));
+      const nextStudents = Array.isArray(data.students) ? data.students.map(normalizeStudent) : null;
+      if (!nextStudents) throw new Error("invalid students");
+      students = nextStudents;
+      weeklyTopic = normalizeWeeklyTopic(data.weeklyTopic || defaultWeeklyTopic);
+      saveStudents();
+      saveWeeklyTopic();
+      fillTopicForm();
+      render();
+      elements.importDataInput.value = "";
+    } catch {
+      alert("백업 파일을 불러오지 못했습니다. JSON 파일을 다시 확인해주세요.");
+    }
+  });
+  reader.readAsText(file);
+}
+
 function render() {
   const pending = students.filter(getAlert);
   const renewals = students.filter((student) => getAlert(student)?.key === "renewal");
@@ -585,7 +974,9 @@ function render() {
   elements.sidebarAlertCount.textContent = `${pending.length}명`;
 
   renderStudentList();
+  renderTodayAttendance();
   renderStudentPreview();
+  renderTopicContent();
 }
 
 function renderStudentList() {
@@ -620,7 +1011,13 @@ function renderStudentList() {
               <span class="tag">고유번호 ${student.pin}</span>
               ${getAttendanceBadge(attendanceStats)}
               ${getAlertBadge(student)}
+              ${getExpiryBadge(student)}
             </div>
+            <div class="student-meta">
+              <span>결제 ${formatDate(student.startDate) || "-"} · 만료 ${formatDate(student.expiryDate) || "-"}</span>
+              <span>${student.memo ? `메모: ${escapeHtml(student.memo)}` : "내부 메모 없음"}</span>
+            </div>
+            <button class="ghost-button slim-button" type="button" data-action="edit">학생 수정</button>
           </div>
 
           <div class="progress-wrap">
@@ -720,8 +1117,11 @@ function renderStudentList() {
                      <button class="ghost-button" type="button" data-action="copy">복사</button>
                      <button class="primary-button" type="button" data-action="sent" data-alert="${alert.key}">발송 완료</button>
                    </div>`
-                : `<strong>현재 자동 알림 없음</strong>
-                   <p>기준 잔여 횟수에 도달하면 카톡 문구가 여기에 표시됩니다.</p>`
+                : `<strong>빠른 카톡 문구</strong>
+                   <textarea readonly>${getAttendanceStats(student).status === "risk" ? makeAttendanceRiskMessage(student) : makeRenewalMessage(student)}</textarea>
+                   <div class="message-actions">
+                     <button class="ghost-button" type="button" data-action="copy">복사</button>
+                   </div>`
             }
           </div>
         </article>
@@ -734,6 +1134,49 @@ function renderStudentList() {
   });
 }
 
+function renderTodayAttendance() {
+  if (!elements.todayAttendanceList) return;
+
+  const day = getDayNumberForAttendance();
+  const date = getTodayISO();
+  const list = getStudentsForDay(day);
+
+  if (!list.length) {
+    elements.todayAttendanceList.innerHTML = `<div class="empty-state">${CLASS_DAY_LABELS[day]}요일 수업 학생이 없습니다.</div>`;
+    return;
+  }
+
+  elements.todayAttendanceList.innerHTML = list
+    .map((student) => {
+      const record = getRecordForDate(student, date);
+      const stats = getAttendanceStats(student);
+      return `
+        <article class="today-card" data-id="${student.id}">
+          <div>
+            <h4>${escapeHtml(student.name)}</h4>
+            <p>${escapeHtml(student.course)} · 수업 ${formatClassDays(student.classDays)} · 남은 ${student.remaining}회</p>
+            <p>${student.memo ? `메모: ${escapeHtml(student.memo)}` : "내부 메모 없음"}</p>
+          </div>
+          <div class="today-status">
+            <span class="tag ${record?.status || ""}">${record ? getAttendanceLabel(record.status) : "미처리"}</span>
+            <span>출석률 ${stats.rate}%</span>
+          </div>
+          <div class="today-actions">
+            <button type="button" data-action="present">출석</button>
+            <button type="button" data-action="absent">결석</button>
+            <button type="button" data-action="undoAttendance">되돌림</button>
+            <button type="button" data-action="edit">수정</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  elements.todayAttendanceList.querySelectorAll(".today-card").forEach((card) => {
+    card.addEventListener("click", handleStudentCardClick);
+  });
+}
+
 async function handleStudentCardClick(event) {
   const button = event.target.closest("button");
   if (!button) return;
@@ -741,6 +1184,11 @@ async function handleStudentCardClick(event) {
   const card = event.currentTarget;
   const student = students.find((item) => item.id === card.dataset.id);
   const action = button.dataset.action;
+
+  if (action === "edit") {
+    openStudentDialog(student);
+    return;
+  }
 
   if (action === "decrease") {
     student.remaining = Math.max(0, student.remaining - 1);
@@ -1046,4 +1494,5 @@ function getCertificateStatusLabel(status) {
   return labels[status || "none"] || status;
 }
 
+fillTopicForm();
 render();
