@@ -671,7 +671,8 @@ function getLatestCertificate(student) {
 }
 
 function getHoldSummary(student) {
-  const limit = student.months * 2;
+  const monthlyLimit = student.course === "더박스 아카데미" ? 1 : 2;
+  const limit = student.months * monthlyLimit;
   const left = Math.max(0, limit - student.holdsUsed);
   return { limit, left };
 }
@@ -759,7 +760,7 @@ function makeMessage(student, alert) {
 현재 ${student.course} 수강권이 ${student.remaining}회 남아있습니다.
 
 남은 수업도 효율적으로 사용하실 수 있도록 출석과 홀딩 일정을 한 번 확인해주세요.
-홀딩은 수업 전날까지 신청 가능하며, ${student.months}개월 등록 기준 총 ${student.months * 2}회까지 사용할 수 있습니다.`;
+홀딩은 수업 전날까지 신청 가능하며, ${student.months}개월 등록 기준 총 ${getHoldSummary(student).limit}회까지 사용할 수 있습니다.`;
   }
 
   return `${nameLine}
