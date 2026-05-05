@@ -701,6 +701,8 @@ function getAttendanceLabel(status) {
     present: "출석",
     absent: "결석",
     hold: "홀딩",
+    scheduled: "수업 예정",
+    off: "수업 없음",
   };
   return labels[status] || status;
 }
@@ -1177,6 +1179,161 @@ function renderTodayAttendance() {
   });
 }
 
+function getDayLabelFromDate(value) {
+  return CLASS_DAY_LABELS[new Date(`${value}T00:00:00`).getDay()];
+}
+
+function formatStudentDate(value) {
+  if (!value) return "";
+  const [, month, day] = value.split("-");
+  return `${Number(month)}월 ${Number(day)}일 ${getDayLabelFromDate(value)}요일`;
+}
+
+function getNextClassDate(student) {
+  const classDays = normalizeClassDays(student.classDays);
+  const base = new Date(`${getTodayISO()}T00:00:00`);
+
+  for (let index = 0; index <= 14; index += 1) {
+    const candidate = addDays(base, index);
+    if (classDays.includes(candidate.getDay())) {
+      return toISODate(candidate);
+    }
+  }
+
+  return "";
+}
+
+function getHoldDeadlineInfo(student) {
+  const nextClassDate = getNextClassDate(student);
+  if (!nextClassDate) {
+    return { nextClassDate: "", canHoldNextClass: false, text: "정기 수업일이 아직 설정되지 않았습니다." };
+  }
+
+  const today = new Date(`${getTodayISO()}T00:00:00`);
+  const classDate = new Date(`${nextClassDate}T00:00:00`);
+  const deadline = addDays(classDate, -1);
+  const canHoldNextClass = today <= deadline;
+
+  return {
+    nextClassDate,
+    canHoldNextClass,
+    text: canHoldNextClass
+      ? `다음 수업 홀딩은 ${formatStudentDate(toISODate(deadline))}까지 신청할 수 있습니다.`
+      : "다음 수업은 홀딩 신청 마감 시간이 지났습니다.",
+  };
+}
+
+function getRemainingGuide(student) {
+  const perWeek = Math.max(1, normalizeClassDays(student.classDays).length);
+  const weeks = Math.ceil(student.remaining / perWeek);
+  if (student.remaining <= 0) return "남은 횟수가 없습니다. 상담실에서 재등록 상담을 받아주세요.";
+  return `현재 패턴 기준 약 ${weeks}주 정도 수업을 이어갈 수 있습니다.`;
+}
+
+function renderStudentTopicCards() {
+  return `
+    <div class="student-topic-panel">
+      <div class="student-panel-head">
+        <span>THIS WEEK</span>
+        <h5>이번 주 수업 주제</h5>
+      </div>
+      <div class="student-topic-grid">
+        ${weeklyTopic.sessions
+          .map(
+            (session, index) => `
+              <article class="student-topic-card">
+                <b>Session ${index + 1}</b>
+                <strong>${escapeHtml(session.title)}</strong>
+                <p>${escapeHtml(session.desc)}</p>
+                <div class="mini-study-list">
+                  ${session.words
+                    .slice(0, 3)
+                    .map(([english, korean]) => `<span><em>${escapeHtml(english)}</em>${escapeHtml(korean)}</span>`)
+                    .join("")}
+                </div>
+                <div class="mini-phrase-list">
+                  ${session.phrases
+                    .slice(0, 2)
+                    .map(([english, korean]) => `<span><em>${escapeHtml(english)}</em>${escapeHtml(korean)}</span>`)
+                    .join("")}
+                </div>
+                ${session.pdf ? `<a class="pdf-link" href="${escapeHtml(session.pdf)}" target="_blank" rel="noopener">PDF 보기</a>` : ""}
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderAttendanceCalendar(student) {
+  const today = new Date(`${getTodayISO()}T00:00:00`);
+  const classDays = normalizeClassDays(student.classDays);
+  const days = Array.from({ length: 28 }, (_, index) => {
+    const date = addDays(today, index - 20);
+    const iso = toISODate(date);
+    const record = getRecordForDate(student, iso);
+    const isClassDay = classDays.includes(date.getDay());
+    const status = record?.status || (isClassDay ? "scheduled" : "off");
+    return { iso, date, status };
+  });
+
+  return `
+    <div class="attendance-calendar">
+      <div class="student-panel-head">
+        <span>CALENDAR</span>
+        <h5>출석 캘린더</h5>
+      </div>
+      <div class="calendar-grid" aria-label="최근 출석 캘린더">
+        ${days
+          .map(
+            (day) => `
+              <div class="calendar-day ${day.status}" title="${formatStudentDate(day.iso)} ${getAttendanceLabel(day.status)}">
+                <span>${CLASS_DAY_LABELS[day.date.getDay()]}</span>
+                <strong>${day.date.getDate()}</strong>
+              </div>
+            `
+          )
+          .join("")}
+      </div>
+      <div class="calendar-legend">
+        <span><i class="present"></i>출석</span>
+        <span><i class="absent"></i>결석</span>
+        <span><i class="hold"></i>홀딩</span>
+        <span><i class="scheduled"></i>수업 예정</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderStudentFaq() {
+  return `
+    <div class="student-faq">
+      <div class="student-panel-head">
+        <span>FAQ</span>
+        <h5>자주 묻는 질문</h5>
+      </div>
+      <details open>
+        <summary>홀딩은 언제까지 신청할 수 있나요?</summary>
+        <p>수업 전날까지 신청할 수 있고, 승인되면 해당 수업은 차감되지 않습니다.</p>
+      </details>
+      <details>
+        <summary>당일 취소나 노쇼는 어떻게 되나요?</summary>
+        <p>당일 취소 또는 노쇼는 수강권에서 1회 차감될 수 있습니다.</p>
+      </details>
+      <details>
+        <summary>PDF 자료는 어디서 확인하나요?</summary>
+        <p>학생 화면의 이번 주 수업 주제 카드에서 바로 열 수 있습니다.</p>
+      </details>
+      <details>
+        <summary>수강증은 어디서 받나요?</summary>
+        <p>앱에서 신청 후 준비 완료가 뜨면 더박스 상담실로 오시면 출력해드립니다.</p>
+      </details>
+    </div>
+  `;
+}
+
 async function handleStudentCardClick(event) {
   const button = event.target.closest("button");
   if (!button) return;
@@ -1316,6 +1473,7 @@ function renderStudentPreview() {
   const latestCertificate = getLatestCertificate(student);
   const hasPendingCertificate = latestCertificate?.status === "pending";
   const canRequestHold = holdSummary.left > 0;
+  const holdDeadline = getHoldDeadlineInfo(student);
 
   elements.studentLogin.classList.add("hidden");
   elements.studentPreview.classList.remove("hidden");
@@ -1353,12 +1511,33 @@ function renderStudentPreview() {
       </div>
     </div>
 
+    <div class="student-action-grid">
+      <div class="next-class-card">
+        <span>NEXT CLASS</span>
+        <strong>${formatStudentDate(holdDeadline.nextClassDate)}</strong>
+        <p>${getRemainingGuide(student)}</p>
+      </div>
+      <div class="next-class-card ${holdDeadline.canHoldNextClass ? "available" : "closed"}">
+        <span>HOLDING</span>
+        <strong>${holdDeadline.canHoldNextClass ? "홀딩 신청 가능" : "홀딩 마감"}</strong>
+        <p>${holdDeadline.text}</p>
+      </div>
+      <div class="todo-card">
+        <span>오늘 확인</span>
+        <label><input type="checkbox" /> 이번 주 주제 보기</label>
+        <label><input type="checkbox" /> 필수 문장 1개 말해보기</label>
+        <label><input type="checkbox" /> 홀딩 필요 여부 확인</label>
+      </div>
+    </div>
+
     <div class="notice-band">
       현재 출석 ${attendanceStats.present}회, 결석 ${attendanceStats.absent}회, 홀딩 ${attendanceStats.hold}회입니다.
       정기 수업일이 지나면 앱 확인 시 남은 횟수가 자동 차감됩니다.
-      홀딩은 수업 전날까지 신청하면 횟수가 차감되지 않습니다.
+      ${holdDeadline.text}
       당일 취소 또는 노쇼는 수강권에서 1회 차감될 수 있습니다.
     </div>
+
+    ${renderStudentTopicCards()}
 
     <form id="holdForm" class="hold-form">
       <div>
@@ -1379,7 +1558,7 @@ function renderStudentPreview() {
         </select>
       </label>
       <button class="primary-button" type="submit" ${canRequestHold ? "" : "disabled"}>홀딩 신청하기</button>
-      <p class="form-note">${canRequestHold ? `이번 수강권에서 ${holdSummary.left}회 더 신청할 수 있습니다.` : "사용 가능한 홀딩 횟수를 모두 사용했습니다."}</p>
+      <p class="form-note">${canRequestHold ? `${holdDeadline.text} 이번 수강권에서 ${holdSummary.left}회 더 신청할 수 있습니다.` : "사용 가능한 홀딩 횟수를 모두 사용했습니다."}</p>
     </form>
 
     <form id="certificateForm" class="certificate-form">
@@ -1405,6 +1584,8 @@ function renderStudentPreview() {
       <button class="primary-button" type="submit" ${hasPendingCertificate ? "disabled" : ""}>수강증 신청하기</button>
       <p class="form-note">${hasPendingCertificate ? "이미 신청한 수강증이 준비 대기 중입니다." : "신청 후 준비가 완료되면 이 화면에서 바로 확인할 수 있습니다."}</p>
     </form>
+
+    ${renderAttendanceCalendar(student)}
 
     <div class="attendance-history">
       <h5>최근 출결 내역</h5>
@@ -1441,6 +1622,8 @@ function renderStudentPreview() {
           : `<p>아직 신청 내역이 없습니다.</p>`
       }
     </div>
+
+    ${renderStudentFaq()}
   `;
 
   elements.studentPreview.querySelector("[data-action='logout']").addEventListener("click", () => {

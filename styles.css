@@ -1378,6 +1378,256 @@ textarea:focus {
   line-height: 1.45;
 }
 
+.student-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.next-class-card,
+.todo-card,
+.student-topic-panel,
+.attendance-calendar,
+.student-faq {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.next-class-card {
+  display: grid;
+  gap: 8px;
+  background: #f8fbfd;
+}
+
+.next-class-card.available {
+  border-color: #b8e5c6;
+  background: var(--green-soft);
+}
+
+.next-class-card.closed {
+  border-color: #f2ca86;
+  background: var(--amber-soft);
+}
+
+.next-class-card span,
+.todo-card span,
+.student-panel-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.next-class-card strong {
+  color: var(--navy);
+  font-size: 22px;
+}
+
+.next-class-card p,
+.todo-card label,
+.student-topic-card p,
+.mini-study-list span,
+.mini-phrase-list span,
+.student-faq p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.todo-card {
+  display: grid;
+  gap: 10px;
+}
+
+.todo-card label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.todo-card input {
+  width: auto;
+  min-height: auto;
+  accent-color: var(--navy);
+}
+
+.student-panel-head {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.student-panel-head h5 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+}
+
+.student-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.student-topic-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fbfd;
+}
+
+.student-topic-card b {
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: var(--brand-red-soft);
+  color: var(--brand-red);
+  font-size: 12px;
+}
+
+.student-topic-card strong {
+  color: var(--navy);
+  font-size: 18px;
+}
+
+.mini-study-list,
+.mini-phrase-list {
+  display: grid;
+  gap: 6px;
+}
+
+.mini-study-list span,
+.mini-phrase-list span {
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.mini-study-list em,
+.mini-phrase-list em {
+  color: var(--navy);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-day {
+  min-height: 54px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fbfd;
+}
+
+.calendar-day span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.calendar-day strong {
+  color: var(--navy);
+  font-size: 15px;
+}
+
+.calendar-day.present {
+  background: var(--green-soft);
+  border-color: #b8e5c6;
+}
+
+.calendar-day.absent {
+  background: var(--red-soft);
+  border-color: #f0b7b2;
+}
+
+.calendar-day.hold {
+  background: var(--amber-soft);
+  border-color: #f2ca86;
+}
+
+.calendar-day.scheduled {
+  background: #eef4f8;
+  border-color: #c6d4df;
+}
+
+.calendar-day.off {
+  opacity: 0.48;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.calendar-legend i {
+  width: 10px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #eef4f8;
+}
+
+.calendar-legend .present {
+  background: var(--green);
+}
+
+.calendar-legend .absent {
+  background: var(--red);
+}
+
+.calendar-legend .hold {
+  background: var(--amber);
+}
+
+.calendar-legend .scheduled {
+  background: var(--blue);
+}
+
+.student-faq {
+  display: grid;
+  gap: 8px;
+}
+
+.student-faq details {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.student-faq summary {
+  color: var(--navy);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.student-faq p {
+  padding-top: 8px;
+}
+
 .hold-form,
 .certificate-form,
 .hold-history {
@@ -1705,6 +1955,8 @@ textarea:focus {
 
   .tools-row,
   .preview-grid,
+  .student-action-grid,
+  .student-topic-grid,
   .hold-form,
   .certificate-form,
   .today-card,
@@ -1718,6 +1970,10 @@ textarea:focus {
 
   .today-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
 
@@ -1842,8 +2098,14 @@ textarea:focus {
   .metric-grid,
   .form-grid,
   .weekday-grid,
+  .student-action-grid,
+  .student-topic-grid,
   .admin-actions {
     grid-template-columns: 1fr;
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .topic-item {
